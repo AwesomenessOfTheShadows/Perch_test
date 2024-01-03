@@ -1,7 +1,8 @@
 from authlib.integrations.flask_client import OAuth
 from flask import Flask, url_for, redirect, render_template, session, Response
 import requests
-import time
+from datetime import timedelta
+import os
 
 
 def fetch_data(location: str, params: dict = {}):
@@ -19,12 +20,15 @@ app = Flask(__name__)
 app.jinja_env.globals.update(fetch_new_token=fetch_new_token)
 
 appConfig = {
-    "OAUTH2_CLIENT_ID": "authpy",
-    "OAUTH2_CLIENT_SECRET": "M7rXgYmSKIf-UraURWA2FBiPSVU",
-    "BASE_URL": "https://student.sbhs.net.au/api",
-    "FLASK_SECRET": "ca45313770bf434552e2a8c8",
-    "FLASK_PORT": 5000
+    "OAUTH2_CLIENT_ID": os.environ.get("OAUTH2_CLIENT_ID"),
+    "OAUTH2_CLIENT_SECRET": os.environ.get("OAUTH2_CLIENT_SECRET"),
+    "BASE_URL": os.environ.get("BASE_URL"),
+    "FLASK_SECRET": os.environ.get("FLASK_SECRET"),
+    "FLASK_PORT": os.environ.get("FLASK_PORT")
 }
+
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=90)
+
 
 app.secret_key = appConfig.get("FLASK_SECRET")
 
@@ -45,12 +49,10 @@ oauth.register(
 @app.route("/")
 def homepage():
     if "token" not in session:
-        return render_template("test.html", session=session.get("token"),
-                               pretty=session.get("token"))
+        return render_template("test.html", pretty=session.get("token"))
     # return fetch_data("/timetable/daytimetable.json", {"date": "2021-08-20"})
     json_timetable = fetch_data("/timetable/daytimetable.json", {"date": "2021-08-20"})
-    return render_template("test.html", session=session.get("token"),
-                           pretty=json_timetable, fetch_new_token=fetch_new_token())
+    return render_template("test.html", pretty=json_timetable)
 
 
 @app.route("/testlogin")
@@ -84,4 +86,4 @@ def callback():
 # client_secret
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
